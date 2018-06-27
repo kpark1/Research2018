@@ -1,0 +1,98 @@
+#!/usr/bin/env python
+import sys, os, ScopeTrace, pylandau, ScopeTrace
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib as mlp
+from scipy.optimize import curve_fit
+from scipy.signal import find_peaks
+from scipy import interpolate
+from itertools import product
+#-------------------------------------------------------------------------------
+# loop through all files
+mlp.rcParams['axes.linewidth'] = 2
+for file in sys.argv[1:]:
+#for file in os.listdir("/home/kpark1/Work/SLab/data"):
+    with open(file, "r") as file1: 
+#with open('data/'+file, "r") as file1: 
+        data= file1.read()
+# decode the scope trace
+        trace = ScopeTrace.ScopeTrace(data,1)
+# find baseline and jitter 
+        baseline,jitter = trace.find_baseline_and_jitter(0,250)
+
+#set x and y
+        inverted_yvalues = []
+        for value in trace.yvalues:
+            inverted_yvalue = -(value-baseline)
+            inverted_yvalues.append(inverted_yvalue)
+        x = np.array(trace.xvalues)
+        y = np.array(inverted_yvalues)
+
+#identify # of pulses
+        #xnew = np.linspace(x.min()+10, x.max(), 20)
+        #y_smooth = interpolate.spline(x, y,xnew)
+        #peaks, heights = find_peaks(y_smooth, height = 0)
+        #print(len(peaks[1:]))
+        #plt.plot(x,y, 'k')
+        #plt.plot(xnew, y_smooth,'g')
+        #plt.plot(peaks[1:], y[peaks[1:]], 'b')
+        #plt.show()
+        #sys.exit()
+
+        #for pulse in peaks[1:]:
+            #x= np.array(x[])
+            #y = np.array(x[])
+            
+#x values at peaks
+        y_array = np.array(y)
+        idx = np.where(y_array == y_array.max())
+#if multiple x values of the same max y values, select the first max
+        idx = idx[0][0]
+        x_values_peak = x[idx]
+
+#determine full width at half maximum
+        def fwhm(y_list ):
+            y_closest_to_hm= min(y_list, key= lambda x: abs(x-.5*max(y_list)))
+            idx_hm_left= np.where(y_array[:idx] == y_closest_to_hm)
+            idx_hm_right = np.where(y_array[idx:]==y_closest_to_hm)
+            x_hm_left = x[idx_hm_left]
+            x_hm_right = x[idx_hm_right]
+            fw =  x_hm_left - x_hm_right
+            return fw
+        
+#Curvefit for Langau when eta2,A2,sigma = 2 ,20, 10 and eta2 >1 and >=sigma/100
+        mpv2 = x_values_peak
+        rmin= 1
+        langau_par_rmin, pcov_rmin = curve_fit(pylandau.langau, x, y, p0= (mpv2, rmin, rmin, rmin))
+        
+        langau_par_rmin = np.around(langau_par_rmin, decimals = 3)
+        param_list = [langau_par_rmin]
+        workinglangaupar = [langau_par_rmin]
+        def diff_sq_fn(parameter):
+            return round(sum((y-pylandau.langau(x, *parameter))**2), 4)
+        print('first diff for' +str(langau_par_rmin) + 'is' +str(diff_sq_fn(langau_par_rmin)))
+        diff_sq = [diff_sq_fn(langau_par_rmin)]
+      #only one best possible parameter with the least diff_sq
+        for eta2, sigma, A2 in product(range(rmin, 100), range(rmin, 100), range(rmin, 100)):
+            langau_par, pcov = curve_fit(pylandau.langau, x, y, p0= (mpv2, eta2,sigma, A2))
+            langau_par = np.around(langau_par, decimals =3) 
+            diff= diff_sq_fn(langau_par)
+            if np.ndarray.tolist(langau_par) != param_list[0] and diff < any(diff_sq):
+                param_list.append(np.ndarray.tolist(langau_par))
+                print('before deleting, working langau parameters are ' + str(workinglangaupar))
+                del workinglangaupar[0]
+                param_list.append(np.ndarray.tolist(langau_par))
+                diff_sq.append(diff)
+                workinglangaupar.append(langau_par)
+    
+                del workinglangaupar[0]
+                print('after deleting, working langau parameters are ' + str(workinglangaupar))
+            else:
+                print('diff for not working parameters,' + str(langau_par)+ ', are ' + str(diff_sq_fn(langau_par)) )
+
+        print(workinglangaupar)
+        workinglangaupar = workinglangaupar[0]
+        plt.plot(x, pylandau.langau(x, workinglangaupar),label = 'langau')
+        plt.plot(x, y, 'k',.2, label = 'data')
+        plt.legend(loc = 'upper left')
+        plt.show()

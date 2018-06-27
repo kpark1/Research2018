@@ -1,0 +1,116 @@
+#!/usr/bin/env python
+import sys, os, ScopeTrace, pylandau, ScopeTrace
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib as mlp
+from scipy.optimize import curve_fit
+from scipy.signal import find_peaks
+from scipy import interpolate
+from itertools import product
+#import warnings
+#-------------------------------------------------------------------------------
+#loop through all files
+#warnings.filterwarnings('ignore', message = 'eta < 1 not supported and set to 1! Scale x to fix.')
+
+mlp.rcParams['axes.linewidth'] = 2
+for file in sorted(os.listdir("/home/kpark1/Work/SLab/data")) :
+    with open('data/'+file, "r") as file1: 
+        data= file1.read()
+        print(str(file1) + ':\n')
+# decode the scope trace
+        trace = ScopeTrace.ScopeTrace(data,1)
+# find baseline and jitter 
+        baseline,jitter = trace.find_baseline_and_jitter(0,250)
+#set x and y
+        inverted_yvalues = []
+        for value in trace.yvalues:
+            inverted_yvalue = -(value-baseline)
+            inverted_yvalues.append(inverted_yvalue)
+        x = np.array(trace.xvalues)
+        y = np.array(inverted_yvalues)
+
+#identify # of pulses
+        #xnew = np.linspace(x.min()+10, x.max(), 20)
+        #y_smooth = interpolate.spline(x, y,xnew)
+        #peaks, heights = find_peaks(y_smooth, height = 0)
+        #print(len(peaks[1:]))
+        #plt.plot(x,y, 'k')
+        #plt.plot(xnew, y_smooth,'g')
+        #plt.plot(peaks[1:], y[peaks[1:]], 'b')
+        #plt.show()
+        #sys.exit()
+
+        #for pulse in peaks[1:]:
+            #x= np.array(x[])
+            #y = np.array(x[])
+            
+#x values at peaks
+        y_array = np.array(y)
+        idx = np.where(y_array == y_array.max())
+#if multiple x values of the same max y values, select the first max
+        idx = idx[0][0]
+        x_values_peak = x[idx]
+
+#determine full width at half maximum
+        def fwhm(y_list ):
+            y_closest_to_hm= min(y_list, key= lambda x: abs(x-.5*max(y_list)))
+            idx_hm_left= np.where(y_array[:idx] == y_closest_to_hm)
+            idx_hm_right = np.where(y_array[idx:]==y_closest_to_hm)
+            x_hm_left = x[idx_hm_left]
+            x_hm_right = x[idx_hm_right]
+            fw =  x_hm_left - x_hm_right
+            return fw
+        
+#Curvefit for Langau when eta2,A2,sigma = 2 ,20, 10 and eta2 >1 and >=sigma/100
+        mpv2 = x_values_peak
+        rmin= 1
+        try: 
+            langau_par_rmin, pcov_rmin = curve_fit(pylandau.langau, x, y, p0= (mpv2, rmin, rmin, rmin))
+            array_1 = np.ndarray.tolist(np.around(langau_par_rmin, decimals = 3))
+            param_list = [array_1]
+            workinglangaupar = [array_1]
+            def diff_sq_fn(parameter):
+                return round(sum((y-pylandau.langau(x, *parameter))**2), 4)
+        #print('The first diff is ' +str(diff_sq_fn(langau_par_rmin))+' for initial parameters ' +str(langau_par_rmin))
+            initial_diff_sq = [diff_sq_fn(langau_par_rmin)]
+        
+        except RuntimeError as message:
+            print(message + ' for ' + str(file))
+            continue
+
+      #only one best possible parameter with the least diff_sq
+        for eta2, sigma, A2 in product(np.linspace(rmin, 25,5 ), np.linspace(rmin, 25, 5), range(rmin, 25, 5)):
+            try:
+                langau_par, pcov = curve_fit(pylandau.langau, x, y, p0= (mpv2, eta2,sigma, A2))
+                langau_par = np.ndarray.tolist(np.around(langau_par, decimals =3))
+                diff= diff_sq_fn(langau_par)
+                par = param_list[0]
+                #print(langau_par)
+                #print(param_list[0])
+                if initial_diff_sq[0] < .01:
+                    break
+                elif langau_par != par and diff < initial_diff_sq[0]:
+                    param_list.append(langau_par)
+                    #print('Before deleting, working langau parameters are ' + str(workinglangaupar))
+                    del workinglangaupar[0]
+                    del initial_diff_sq[0]
+                    initial_diff_sq.append(diff)
+                    workinglangaupar.append(langau_par)
+                    #print('After deleting, the difference squared is ' + str(diff)+' for working langau parameters ' + str(workinglangaupar))
+    
+                    break
+                else:
+                    #print('Diff for not working parameters,' + str(langau_par)+ ', are ' + str(diff_sq_fn(langau_par)) 
+                    continue
+            except RuntimeError as message:
+                print(message+ str(file))
+                continue
+        print('In ' + str(file) +', ' +'the variance is '+ str(diff/len(y))+' for the final working langau parameters '+str(workinglangaupar[0]))
+        plt.plot(x, y, label = 'data')
+        plt.plot(x, pylandau.langau(x, *workinglangaupar[0]), label = 'langau')
+        plt.legend(loc = 'upper left')
+        plt.show()
+                #print(RuntimeError: Optimal parameters not found: Number of calls to function has reached maxfev = 1000.) and print(WARNING: eta < 1 not supported and set to 1! Scale x to fix.)
+   
+    
+        

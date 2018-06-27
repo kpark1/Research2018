@@ -1,0 +1,104 @@
+#!/usr/bin/env python
+import sys
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib as mlp
+import ScopeTrace
+from scipy.optimize import curve_fit
+import pylandau
+import sets
+#---------------------------------------------------------------------------------------------------
+# M A I N
+#---------------------------------------------------------------------------------------------------
+# initial settings
+mlp.rcParams['axes.linewidth'] = 2
+
+for filename in sys.argv[1:]:
+    print ' File to open: ' + filename
+    with open(filename,"r") as file:
+        data = file.read()
+# decode the scope trace
+trace = ScopeTrace.ScopeTrace(data,1)
+# find baseline and jitter 
+baseline,jitter = trace.find_baseline_and_jitter(0,250)
+
+inverted_yvalues = []
+for value in trace.yvalues:
+    inverted_yvalue = -(value-baseline)
+    inverted_yvalues.append(inverted_yvalue)
+
+x = trace.xvalues[0:800] 
+x = np.array(x)
+y = inverted_yvalues[0:800] 
+
+#x values at peaks
+y_find_idx = np.array(y)
+idx = np.where(y_find_idx == y_find_idx.max())
+idx = idx[0]
+x_values_peak = []
+for i in range(len(idx)):
+    idx_value= idx[i]
+    x_values_peak.append(idx_value)
+
+#curvefit for LANDAU with uncertainties
+#mpv, eta, A = 330, 35, 30
+#coeff, pcov = curve_fit(pylandau.landau, x, y, p0= (mpv, eta, A), sigma= np.array([float(jitter)]*len(x)))
+#print("Landau parameters are:\n"+ str(coeff))
+#y_landau = pylandau.landau(x, *coeff)
+#plt.plot(x, y_landau,'b',label = 'landau')
+#plt.plot(x, y, 'k',.2, label = 'data')
+
+#curvefit for GAUSSIAN
+mean = sum(inverted_yvalues)/len(trace.xvalues)
+gpar_unique = []
+y_all= []
+for sigma in np.linspace(-100,100 ,1000):
+    def gaus(x, a, x0, sigma):
+        return a*np.exp(-(x-x0)**2/(2*sigma**2))
+    gpar, pcov = curve_fit(gaus, x,y, p0=[1,mean,sigma] )
+    y_g = gaus(x, *gpar)
+    print('gpar' +str(gpar))
+    print('max'+str(max(y_g)))
+    if gpar[i] not in gpar_unique and max(y_g) > jitter*10000:
+        gpar_unique.append(np.ndarray.tolist(gpar))
+print('\nWorking Gaussian parameters are:\n '+ str(gpar_unique))
+
+
+#for i in range(len(par_g_all)):
+   # y_value = gaus(x, *gpar_all[i])
+    #if max(y_value)> jitter*10000:
+        #plt.plot(x, y_value, label = 'gaussian'+ str(i))
+       # param_final.extend(popt_unique[i])
+       # second_parameter = [popt_all[i][0], popt_all[i][1], -float( popt_all[i][2])]
+        #print('\nWorking Gaussian parameters are:\n '+ str(popt_all[i]) +'and' + str(second_parameter))
+
+
+mpv2 = x_values_peak[0]
+eta2  = 2
+A2 = 20
+sigma = 10
+
+coeff2, pcov = curve_fit(pylandau.langau, x, y, p0= (mpv2, eta2,sigma, A2))
+print("\nLangau parameters are:\n"+ str(coeff2))
+y_langau = pylandau.langau(x, *coeff2)
+#plt.plot(x, y_langau,label = 'langau')
+
+
+#mean = baseline -> when adjusted = 0
+mean = 0
+stdev = jitter
+
+
+#randomcoeff = np.array(coeff2)
+
+#y_create = pylandau.langau(x, *randomcoeff)
+#uncertainty= np.random.normal(mean, stdev, len(x))
+#uncertainty = np.ndarray.tolist(uncertainty)
+#y_uncertainty_all = []
+#for i in range(len(y)):
+   #y_uncertainty = y_create[i] + uncertainty[i]
+   #y_uncertainty_all.append(y_uncertainty)
+
+#plt.bar(x, y_uncertainty_all,  label = 'y_uncertainty_all')
+plt.legend(loc = 'upper left')
+plt.show()

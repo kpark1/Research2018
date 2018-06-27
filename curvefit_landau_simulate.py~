@@ -1,0 +1,39 @@
+#!/usr/bin/env python
+import sys, os, ScopeTrace, pylandau, ScopeTrace
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib as mlp
+from scipy.optimize import curve_fit
+from itertools import product
+import csv
+import random
+#-------------------------------------------------------------------------------
+#mean jitter = .0000025
+x = np.array(np.linspace(0, 1000, 1000))
+mpv_x = np.loadtxt('mpv_data.csv', unpack = True, delimiter = ',')
+mpv = random.choice(mpv_x)
+eta_x = np.loadtxt('eta_data.csv', unpack = True, delimiter = ',')
+eta = random.choice(eta_x)
+A_x = np.loadtxt('A_data.csv', unpack = True, delimiter = ',')
+A = random.choice(A_x)
+jitter_x = np.loadtxt('jitter_data.csv', unpack = True, delimiter = ',')
+jitter = random.choice(jitter_x)
+
+mpv= 358.742
+eta= 29.766
+A=.208
+jitter=2e-06
+
+parameter = [mpv, eta, A]
+new_y = []
+y = pylandau.landau(x, *parameter)
+for value in y :
+    new = value + np.random.normal(0, np.sqrt(jitter))
+    new_y.append(new)
+plt.plot(x, new_y,color = 'r')
+#plt.plot(x, y, color ='b')
+plt.xlabel('Time [nanoseconds]')
+plt.ylabel('Voltage [V]')
+plt.ylim(-.01, .25)
+plt.title('mpv, eta, A, jitter = '+str(parameter[0])+', '+ str(parameter[1])+', '+ str(parameter[2])+', '+ str(np.around(jitter, decimals = 6)))
+plt.show()

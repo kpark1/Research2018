@@ -1,0 +1,116 @@
+#!/usr/bin/env python
+import sys, os, ScopeTrace, pylandau, ScopeTrace
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib as mlp
+from scipy.optimize import curve_fit
+from itertools import product
+import csv
+from collections import Counter
+#-------------------------------------------------------------------------------
+r_j =  [[.000001, .000004], [.000002, .0000024], [.0000015, .000003]]
+r_m = [[300,350],[304,313], [304, 313]]
+r_e =[ [12, 40], [12,40], [12,40]]
+r_A = [[0, 0.35], [0,0.35], [0,.35]]
+
+#check the csv file name before each run
+jitter_data_1 = np.loadtxt('jitter_data.csv', unpack = True, delimiter = ',')
+jitter_data_1 = np.ndarray.tolist(jitter_data_1)
+jitter_data_2 =  np.loadtxt('jitter_data_2.csv', unpack = True, delimiter = ',')
+jitter_data_2 = np.ndarray.tolist(jitter_data_2)
+jitter_data_3 =  np.loadtxt('jitter_data_3.csv', unpack = True, delimiter = ',')
+jitter_data_3 = np.ndarray.tolist(jitter_data_3)
+(n,bins, patches)=plt.hist(jitter_data_1, bins = 200, range = r_j[0], color = 'r', label = '1' )
+(n3, bins3, patches3) =plt.hist(jitter_data_3, bins = 50, range = r_j[2] ,color = 'g',label ='3')
+#plt.hist(jitter_data_2, bins = 200,  range =  [0,.000004],color  ='b', label ='2')
+#plt.show()
+#initial guess
+
+n3 = np.ndarray.tolist(n3)
+n3.append(0)
+n3= np.array(n3)
+print(n3)
+print(len(n3))
+def gaus(x, a, x0, sigma):
+    return a* np.exp(-.5*((x-x0)/sigma)**2)
+
+
+
+#a, mean, sigma
+a= 12
+mean = .0000018
+sigma = .00000035
+#x= np.linspace(0, .000004, len(n))
+#popt, pcov = curve_fit(gaus,x, n , p0 = [a, mean, sigma])
+#plt.plot(x, gaus(x, *popt), 'k', label = 'gaussian fit for data 1')
+
+x= np.linspace(0, .000004, len(n3))
+a2= 43
+mean= .0000023
+sigma= .0000002
+par= [a2, mean, sigma]
+plt.plot(x, gaus(x, *par), 'r', label = 'guess')
+popt3, pcov2 = curve_fit(gaus,bins3, n3 , p0 = [a, mean, sigma])
+plt.plot(bins3, gaus(bins3,*popt3), 'm', label = 'gaussian fit for data 3')
+
+plt.xlim(0, .000005)
+plt.ylim(0,60)
+plt.legend()
+plt.show()
+sys.exit()
+
+for sigma in np.linspace(0, 30,100):
+    try:
+        popt, pcov = curve_fit(gaus, x, jitter_data_1, p0 = [a,mean, sigma])
+        plt.plot(x, gaus(x, *popt), 'k', label = 'gaussian fit')
+        plt.xlim(0, 100)
+        plt.ylim(0,.0001)
+        plt.legend()     
+        plt.title('jitter')
+
+        plt.show()
+    except RuntimeError as message:
+        print(message)
+
+        
+plt.show()
+    
+
+sys.exit()
+
+mpv_data_1 = np.loadtxt('mpv_data.csv', unpack = True, delimiter = ',')
+mpv_data_1 = np.ndarray.tolist(mpv_data_1)
+mpv_data_2 =  np.loadtxt('mpv_data_2.csv', unpack = True, delimiter = ',')
+mpv_data_2 = np.ndarray.tolist(mpv_data_2)
+mpv_data_3 =  np.loadtxt('mpv_data_3.csv', unpack = True, delimiter = ',')
+mpv_data_3 = np.ndarray.tolist(mpv_data_3)
+plt.hist(mpv_data_1, bins = 200, range = r_m[0] )
+plt.hist(mpv_data_2, bins = 200, range = r_m[1] )
+plt.hist(mpv_data_3, bins = 200, range = r_m[2] )
+plt.title('mpv')
+plt.show()
+
+
+eta_data_1 = np.loadtxt('eta_data.csv', unpack = True, delimiter = ',')
+eta_data_1 = np.ndarray.tolist(eta_data_1)
+eta_data_2 =  np.loadtxt('eta_data_2.csv', unpack = True, delimiter = ',')
+eta_data_2 = np.ndarray.tolist(eta_data_2)
+eta_data_3 =  np.loadtxt('eta_data_3.csv', unpack = True, delimiter = ',')
+eta_data_3 = np.ndarray.tolist(eta_data_3)
+plt.hist(eta_data_1, bins = 200, range = r_e[0] )
+plt.hist(eta_data_2, bins = 200, range = r_e[1] )
+plt.hist(eta_data_3, bins = 200, range = r_e[2] )
+plt.title('eta')
+plt.show()
+
+A_data_1 = np.loadtxt('A_data.csv', unpack = True, delimiter = ',')
+A_data_1 = np.ndarray.tolist(A_data_1)
+A_data_2 =  np.loadtxt('A_data_2.csv', unpack = True, delimiter = ',')
+A_data_2 = np.ndarray.tolist(A_data_2)
+A_data_3 =  np.loadtxt('A_data_3.csv', unpack = True, delimiter = ',')
+A_data_3 = np.ndarray.tolist(A_data_3)
+plt.hist(A_data_1, bins = 200, range = r_A[0] )
+plt.hist(A_data_2, bins = 200, range = r_A[1] )
+plt.hist(A_data_3, bins = 200, range = r_A[2] )
+plt.title('A')
+plt.show()

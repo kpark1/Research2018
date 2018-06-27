@@ -1,0 +1,19 @@
+
+class Histogram:
+	def __init__(self, data, default_dir = 'home/kpark1/Work/SLab'):
+		self.data = data
+		self.dir = default_dir
+		with open(self.default_dir+self.data, 'r') as file1:
+			self.xvalues = []
+			self.yvalues = []
+			for line in data.split('\n'):
+				f = line.split(',')
+				if len(f) <5:
+					x+= float(i)
+					y+= float(f[4])
+				i +=1
+
+	def print_(self):
+		print(self.xvalues)
+		print(self.yvaleus)
+

@@ -1,0 +1,63 @@
+#!/usr/bin/env python
+import sys, os, ScopeTrace, pylandau, ScopeTrace
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib as mlp
+from scipy.optimize import curve_fit
+from scipy import signal
+from scipy import interpolate
+from itertools import product
+#import warnings
+#-------------------------------------------------------------------------------
+#loop through all files
+#warnings.filterwarnings('ignore', message = 'eta < 1 not supported and set to 1! Scale x to fix.')
+
+mlp.rcParams['axes.linewidth'] = 2
+for file in sys.argv[1:]:
+    with open('data/'+file, "r") as file1: 
+        data= file1.read()
+# decode the scope trace
+        trace = ScopeTrace.ScopeTrace(data,1)
+        
+# find baseline and jitter 
+        baseline,jitter = trace.find_baseline_and_jitter(0,250)
+        
+#set x and y 
+        inverted_yvalues = []
+        for value in trace.yvalues:
+            inverted_yvalue = -(value-baseline)
+            inverted_yvalues.append(inverted_yvalue)
+        #locate pulses
+        x = trace.xvalues
+        y = inverted_yvalues
+        max_peak_width = 500
+        peak_widths = np.arange(1, max_peak_width)
+        peaks = signal.find_peaks_cwt(np.array(y), peak_widths)
+        pulses = []
+        plt.plot(x,y)
+        plt.legend()
+        plt.show()
+        for each_peak in peaks:
+            if inverted_yvalues[each_peak]> 3* np.mean(inverted_yvalues[800:]):
+                pulses.append(each_peak)                   
+        print(pulses)
+        n_of_pulses = len(pulses)
+        
+        if n_of_pulses == 0:
+            continue
+        elif n_of_pulses ==1:
+            continue
+ #blah 
+        elif n_of_pulses >1:
+            #find ranges
+            previous = 0
+            halfwidth =  (peaks[0]-previous)
+            #print(halfwidth)
+            #print('peaks' +str(peaks[0]))
+            y_new = y[peaks[0]:(peaks[0] +halfwidth)]
+            x_new = x[peaks[0]:peaks[0]+halfwidth]
+            y_closest_to = np.around(min(y_new, key = lambda y:abs(y-.005)), decimals = 5)
+            idx = np.where(np.around(y_new, decimals =5)==y_closest_to)
+            print(idx[0])
+            
+        

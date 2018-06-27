@@ -1,0 +1,99 @@
+#!/usr/bin/env python
+import sys, os, pylandau
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
+from itertools import product
+from random import choice
+#-------------------------------------------------------------------------------
+class Simulate():
+    def __init__(self, jitterfile, mpvfile, etafile, Afile, n_pulses=1 ):
+         #ex) mpv list1 = mpv_data.csv
+        self.jitterfile = jitterfile
+        self.mpvfile = mpvfile
+        self.etafile = etafile
+        self.Afile = Afile
+        self.n_pulses = 1
+    
+    def gaus(self, x, a, x0, sigma):
+        return a* np.exp(-.5*((x-x0)/sigma)**2)
+
+   #read an array of parameters from a list of stored parameters
+    def par_read(self):
+        jitter_s = np.loadtxt(self.jitterfile, unpack = True, delimiter = ',')
+        mpv_s = np.loadtxt(self.mpvfile, unpack = True, delimiter = ',')
+        eta_s = np.loadtxt(self.etafile, unpack = True, delimiter = ',')
+        A_s = np.loadtxt(self.Afile, unpack = True, delimiter = ',')
+        return (jitter_s, mpv_s, eta_s, A_s)
+
+    #randomly pick parameters from normal distribution
+    def par_rand(self, mpvmaxlim =400, Amaxlim= 1):
+        jitter_s, mpv_s, eta_s, A_s = self.par_read()
+        
+        jitter = choice(jitter_s)
+        while True:
+            mpv = choice(mpv_s)
+            if mpv < mpvmaxlim:
+                break
+        eta= choice(eta_s)
+        while True:
+            A = choice(A_s)
+            if A < Amaxlim:
+                break
+        return (float(mpv), float(eta), float(A))
+   
+    def histogram(self, directoryname= 'data', unit = 10**6, hbins=15, hrange = False, hcolor= 'r', hedgecolor = 'k', halpha = .5):
+#directoryname is the name of a folder the stored parameters originated from
+
+        jitter_s, mpv_s, eta_s, A_s = self.par_read()
+        jitter= np.ndarray.tolist(jitter_s)
+        (n,bins, patches)= plt.hist(jitter, bins = int(hbins), range = hrange, color = hcolor,edgecolor = hedgecolor, alpha = float(halpha), label = str(directoryname))
+        #len(n)+1 = len(bins) 
+        n = np.ndarray.tolist(n)
+        n.append(0)
+        n= np.array(n)
+        nerror = []
+        n3error = []
+        for nval in n:
+            nerror.append(float(np.sqrt(nval)))
+        
+        nerror = np.array(nerror)
+
+        #change of units from volt to  microvolt 
+        bins_conv = [bin * int(unit) for bin in bins]
+        list1=list(np.linspace(min(bins),max(bins),100))
+        list1_conv = [list1_val *int(unit) for list1_val in list1]
+        
+        plt.errorbar(bins_conv, n, yerr= nerror, fmt ='o', label = 'Histogram for ' +str(directoryname))
+        plt.plot(list1_conv,  self.gaus(list1, *popt), 'k', label = 'Gaussian Fit for ' +str(directoryname))
+        plt.xlabel('Jitter Value [microvolt]')
+        plt.ylabel('Number of Pulses')
+        plt.legend()
+        plt.show()
+'''
+    def simulate_par(self, xmin_s=0, xmax_s=1000, points = 1000, mpvminrange =0, Amaxrange= 0):
+        x_s= np.array(np.linspace(xmin_s, xmax_s, points))
+    
+        
+        while jitter >=0:
+            jitter = choice(jitter_s)
+        while mpv >= mpvminrange:
+            mpv = choice(mpv_s)
+        eta= choice(eta_s)
+        while A >= Amaxrange:
+            A = choice(A_s)
+        
+        parameter = [float(mpv), float(eta), float(A)]
+    
+        y = pylandau.landau(x_s, *parameter)
+        yj = [value + np.random.normal(0, np.sqrt(jitter)) for value in y1]
+        return (jitter, mpv, eta, A, y1, y)
+    def simulate_multiplepulses(self, xmin_s=0, xmax_s=1000, points = 1000):
+        mpv = 0
+        for n in range(self.n_pulses):
+            print(n)
+            jitter, mpv, eta, A, y, yj = self.simulate_par() 
+            y += self.simulate_param()
+            print(y[100])
+        
+'''
