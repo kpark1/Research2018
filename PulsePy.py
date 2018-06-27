@@ -449,7 +449,7 @@ class ScopeData():
 
 
 		  directory = "/home/kpark1/Work/SLab/data_4/"
-		  d=PulsePy.Scope(directory)
+		  d=PulsePy.ScopeData(directory)
 		  d.histogram('jitter')
 		  plt.show()
 
