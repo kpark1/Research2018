@@ -7,7 +7,9 @@ ScopeData allows users to store parameters and search for pulses that meet speci
 To run this package, the following packages should be installed:
 sys, os, pylandau, numpy, matplotlib, scipy, itertools, random, time, csv
 
-'''
+To install these packages, type in 'pip install <package>' in linux command line.'''
+    
+    
 import sys, os, pylandau
 import numpy as np
 import matplotlib.pyplot as plt
@@ -128,7 +130,7 @@ class ScopeTrace():
 
 		:param str name: Name of value of interest, such as 'Trigger Point'.
 		:param str data: Read CSV file. Compatible with ScopeData.data_read().
-		:param {'f', 'i'}/optional type: Type of values evaluated. 'f' for float and 'i' for integer or index.
+		:param 'f'/'i'/optional type: Type of values evaluated. 'f' for float and 'i' for integer or index.
 		'''
 		value = self.undefined_value
 		for line in data.split("\n"):
@@ -388,8 +390,10 @@ class ScopeData():
 		Returns a list of files that satisfy conditions from a user input with an option of plotting the pulses. :: 
 
 
-		     data  = PulsePy.ScopeData('/home/kpark1/SLab/data/', '/home/kpark1/SLab/savedata/data_1_parameters')
-		     print(data.search_pulses([lambda x: x < .002, lambda x: x < .004], ['amp', 'mpv'], plotting = False))
+		     data  = PulsePy.ScopeData('/home/kpark1/SLab/data/',
+                                               '/home/kpark1/SLab/savedata/data_1_parameters')
+		     print(data.search_pulses([lambda x: x < .002, lambda x: x < .004],
+                                              ['amp', 'mpv'], plotting = False))
 	     
 
 		:param list conditions: List of boolean functions. 
@@ -449,7 +453,7 @@ class ScopeData():
 
 
 		  directory = "/home/kpark1/Work/SLab/data_4/"
-		  d=PulsePy.Scope(directory)
+		  d=PulsePy.ScopeData(directory)
 		  d.histogram('jitter')
 		  plt.show()
 
@@ -556,13 +560,15 @@ def gaus(x, a, x0, sigma):
 
 
 
-def simulate_pulses(num_events, time_range, eta_stats, amp_stats, jitter_stats, trigger_threshold=None, baseline=0.0, trigger_offset=None, num_pulses=None, possion_parameter=1, plotting=False, plot_pulse=False, save=True, output_dir=None):
+def simulate_pulses(num_events=2, time_range=np.linspace(0, 2e-06, 2500), eta_stats=[5e-08,0], amp_stats=[1e-01,0], jitter_stats=[2e-06, 0], trigger_threshold=None, baseline=0.0, trigger_offset=None, num_pulses=None, possion_parameter=1, plotting=False, plot_pulse=False, save=True, output_dir=None):
 	'''
 	Simulates Landau pulses with noise or jitter. 
-	Returns ScopeData object. ::cd
+	Returns ScopeData object. ::
 
 
-	  PulsePy.simulate_pulses(2, np.linspace(0, 2e-06, 2500), [5e-08,0] ,[1e-01,0],[2e-06, 0], plotting = True, plot_pulse = True)
+	  PulsePy.simulate_pulses(2, np.linspace(0, 2e-06, 2500), 
+	                          [5e-08,0] ,[1e-01,0],[2e-06, 0], 
+                                  plotting = True, plot_pulse = True)
 	  plt.show()
 
 	:param integer num_events: Number of files of events to create. 
