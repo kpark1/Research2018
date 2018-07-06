@@ -7,7 +7,17 @@ ScopeData allows users to store parameters and search for pulses that meet speci
 To run this package, the following packages should be installed:
 sys, os, pylandau, numpy, matplotlib, scipy, itertools, random, time, csv
 
-To install these packages, type in 'pip install <package>' in linux command line.'''
+There are two options to install these packages. The first option is: type in 'pip install <package>' in linux command line.  Below is an exmple of how to install a package using Linux. ::
+
+
+  pip install sys os pylandau numpy #List all the required packages that are not already installed into your system with a space in between each names.
+
+The second option is: ::
+
+
+    pip install -r requirements.txt
+  
+'''
     
     
 import sys, os, pylandau
@@ -29,13 +39,13 @@ class ScopeTrace():
 	#AttributeError: ScopeTrace instance has no attribute 'split' -> when you didn't read the data correct, the program gets confused
 	undefined_value = None
 
-	def __init__(self, data, n_average = 1):
+	def __init__(self, data = '15192.CSV', n_average = 1):
 		self.data = data
 		self.n_average = n_average
 		self.xvalues = []
 		self.yvalues = []
 		try:
-			self.sample_interval = self.find_value('Sample Interval', data)
+			self.sample_interval = self.find_value('Sample Interval')
 		except:
 			#pass
 			self.sample_interval = self.xvalues[1] - self.xvalues[0]
@@ -124,7 +134,7 @@ class ScopeTrace():
 
 
 
-	def find_value(self, name, data, type="f"):
+	def find_value(self, name, type="f"):
 		'''
 		Returns the oscilloscope settings such as record length, sample interval, units, etc.
 
@@ -133,7 +143,7 @@ class ScopeTrace():
 		:param 'f'/'i'/optional type: Type of values evaluated. 'f' for float and 'i' for integer or index.
 		'''
 		value = self.undefined_value
-		for line in data.split("\n"):
+		for line in self.data.split("\n"):
 			f = line.split(',')
 			if f[0] == name:
 				if type == 'f':
@@ -249,6 +259,7 @@ class ScopeTrace():
 
 		#plotting
 		plt.plot(x, y, label='Data')
+		plt.title(file)
 		if fit_param != None and len(fit_param) == 3:
 			plt.plot(x, pylandau.landau(np.linspace(0, len(x) - 1, len(x)), fit_param[0]/self.sample_interval, fit_param[1]/self.sample_interval, fit_param[2]), label='Landau Fit')
 
@@ -295,8 +306,8 @@ class ScopeData():
 		Returns ScopeTrace object from filename.
 		:param str filename: String of filename. ::
 
-		
-		  directory = "/home/kpark1/Work/SLab/data/"
+		  #Type in the name of the directory where the data files are stored
+		  directory = $PATH #e.g. "/home/user1/Work/SLab/data/" 
 		  for file in sorted(os.listdir(directory)):
 		      f = PulsePy.ScopeData(directory)
 		      f.data_read(file)
@@ -312,8 +323,8 @@ class ScopeData():
 		'''
 		Saves parameters. ::
 		
-
-		  directory = "/home/kpark1/Work/SLab/data_4/"
+                  #Type in the name of the directory where the data files are stored 
+		  directory = $PATH #e.g. "/home/user1/Work/SLab/data/"
 		  d=PulsePy.ScopeData(directory)
 		  d.save_parameters(plotting = False)
 
@@ -388,10 +399,10 @@ class ScopeData():
 	def search_pulses(self, conditions, parameters, and_or='and', plotting=True):
 		'''
 		Returns a list of files that satisfy conditions from a user input with an option of plotting the pulses. :: 
-
-
-		     data  = PulsePy.ScopeData('/home/kpark1/SLab/data/',
-                                               '/home/kpark1/SLab/savedata/data_1_parameters')
+                     #Type in the name of the directory where the data files are stored and the output directory
+		     directory = $PATH #e.g. "/home/user1/Work/SLab/data/"
+		     output_dir = $STRPATH #e.g. "/home/user1/SLab/savedata/data_1_parameters"
+		     data  = PulsePy.ScopeData(directory, output_dir)
 		     print(data.search_pulses([lambda x: x < .002, lambda x: x < .004],
                                               ['amp', 'mpv'], plotting = False))
 	     
@@ -452,7 +463,7 @@ class ScopeData():
 		Returns a list parameters, a mean value and standard deviation, of Gaussian fit to histogram if parameter == 'eta' or 'jitter'::
 
 
-		  directory = "/home/kpark1/Work/SLab/data_4/"
+		  directory = "/home/$USERNAME/Work/SLab/data_4/"
 		  d=PulsePy.ScopeData(directory)
 		  d.histogram('jitter')
 		  plt.show()
